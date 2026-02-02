@@ -1,26 +1,14 @@
-#NAM MO A DI DA PHAT
+import os
+import sys
+
+# Đảm bảo Python nhận diện được thư mục gốc
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from src.app import create_app
-from src.infrastructure.databases.database_mssql import DatabaseMSSQL
 
-# Import Model để đảm bảo Python nhận diện được (quan trọng)
-from src.infrastructure.models.s2o_structures import RestaurantModel
-
-app = create_app()
-
-
-# 👇 COMMENT LẠI HOẶC XÓA HÀM init_database ĐI
-# def init_database():
-#     db = DatabaseMSSQL()
-#     try:
-#         from src.infrastructure.databases.base import Base
-#         # Base.metadata.create_all(db.engine)  <-- DÒNG NÀY GÂY LỖI
-#         print("✅ Đã kiểm tra Schema Database.")
-#     except Exception as e:
-#         print(f"⚠️ Lỗi init_database: {e}")
-
-if __name__ == "__main__":
-    # init_database()  <-- COMMENT LẠI DÒNG NÀY
-    
-    print("🚀 Server đang khởi động...")
-    # Chạy server (tắt debug=True nếu muốn test production, nhưng dev thì cứ để True)
+if __name__ == '__main__':
+    app = create_app()
+    print("\n---------------------------------------------------------")
+    print("🚀 SERVER ĐANG KHỞI ĐỘNG TẠI: http://0.0.0.0:5000")
+    print("---------------------------------------------------------\n")
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -3,10 +3,10 @@ import { Save, Clock, DollarSign, Printer } from 'lucide-react';
 
 export function Settings() {
   const [restaurantInfo, setRestaurantInfo] = useState({
-    name: 'The Golden Fork',
-    address: '123 Main Street, City, State 12345',
-    phone: '+1 (555) 123-4567',
-    email: 'info@goldenfork.com',
+    name: 'Phở Ông Hùng',
+    address: '45 Võ Văn Tần, Quận 3, TP.HCM',
+    phone: '0123456789',
+    email: 'info@phoonghung.com',
   });
 
   const [hours, setHours] = useState({

@@ -1,31 +1,80 @@
 from flask import Blueprint, jsonify, request
-from src.services.restaurant_service import RestaurantService 
+from flask_cors import cross_origin
+import traceback
+
+from src.infrastructure.services.restaurant_service import RestaurantService
 from src.infrastructure.repositories.restaurant_repository import RestaurantRepository
 from src.infrastructure.databases.database_mssql import DatabaseMSSQL
-from sqlalchemy import text 
-import traceback
-import sys
-import datetime
 
-# Tạo Blueprint
-restaurant_bp = Blueprint('restaurant_bp', __name__)
+restaurant_bp = Blueprint("restaurant_bp", __name__)
 
-# ==============================================================================
-# ROUTE 1: LẤY DANH SÁCH NHÀ HÀNG
-# ==============================================================================
-@restaurant_bp.route('/', methods=['GET'], strict_slashes=False)
+# ==========================================================
+# 🆕 1. API: LẤY MENU (Fix lỗi 404 MenuPage)
+# ==========================================================
+@restaurant_bp.route("/menu", methods=["GET"])
+@cross_origin()
+def get_menu():
+    db = None
+    try:
+        # Lấy restaurantId từ URL (ví dụ: ?restaurantId=3)
+        res_id = request.args.get('restaurantId')
+        if not res_id:
+            return jsonify({"error": "Thiếu restaurantId"}), 400
+
+        db = DatabaseMSSQL()
+        repo = RestaurantRepository(db.session)
+        service = RestaurantService(repo)
+        
+        # Gọi service lấy menu
+        menu = service.get_menu_list(res_id)
+        return jsonify(menu), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db: db.close()
+
+# ==========================================================
+# 🆕 2. API: CHECK TRẠNG THÁI BÀN (Fix lỗi 404 LandingPage)
+# ==========================================================
+@restaurant_bp.route("/table/status", methods=["GET"])
+@cross_origin()
+def check_table_status():
+    db = None
+    try:
+        # Lấy tableId từ URL (ví dụ: ?tableId=1)
+        table_id = request.args.get('tableId')
+        if not table_id:
+            return jsonify({"error": "Thiếu tableId"}), 400
+
+        db = DatabaseMSSQL()
+        repo = RestaurantRepository(db.session)
+        
+        # Gọi trực tiếp Repo để check nhanh
+        status = repo.get_table_status(table_id)
+        
+        if status:
+            return jsonify({"status": status}), 200
+        else:
+            return jsonify({"error": "Không tìm thấy bàn"}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db: db.close()
+
+# ==========================================================
+# 3. GET ALL RESTAURANTS (Cho Admin & Customer)
+# ==========================================================
+@restaurant_bp.route("/", methods=["GET"], strict_slashes=False)
+@cross_origin()
 def get_restaurants():
-    print("➡️ [DEBUG] Bắt đầu xử lý Request GET /restaurants")
     db = None
     try:
         db = DatabaseMSSQL()
-        if not db.session:
-            return jsonify({"error": "Failed to connect to Database"}), 500
-
         repo = RestaurantRepository(db.session)
         service = RestaurantService(repo)
         data = service.get_all_restaurants()
-        
         return jsonify(data), 200
     except Exception as e:
         traceback.print_exc()
@@ -33,127 +82,86 @@ def get_restaurants():
     finally:
         if db: db.close()
 
-# ==============================================================================
-# ROUTE 2: LẤY CHI TIẾT NHÀ HÀNG
-# ==============================================================================
-@restaurant_bp.route('/<int:id>', methods=['GET'], strict_slashes=False)
+# ==========================================================
+# 4. GET RESTAURANT BY ID
+# ==========================================================
+@restaurant_bp.route("/<int:id>", methods=["GET"], strict_slashes=False)
+@cross_origin()
 def get_restaurant_detail(id):
-    print(f"➡️ [DEBUG] Bắt đầu lấy chi tiết nhà hàng ID: {id}")
     db = None
     try:
         db = DatabaseMSSQL()
-        if not db.session:
-            return jsonify({"error": "Database connection failed"}), 500
-
         repo = RestaurantRepository(db.session)
         service = RestaurantService(repo)
         restaurant = service.get_restaurant_by_id(id)
-        
-        if restaurant:
-            # Xử lý dọn dẹp dữ liệu thừa của SQLAlchemy
-            if isinstance(restaurant, dict) and '_sa_instance_state' in restaurant:
-                del restaurant['_sa_instance_state']
-            return jsonify(restaurant), 200
-        else:
-            return jsonify({"error": "Restaurant not found"}), 404
-
+        if not restaurant:
+            return jsonify({"message": "Restaurant not found"}), 404
+        return jsonify(restaurant), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
     finally:
         if db: db.close()
 
-# ==============================================================================
-# ROUTE 3: API ĐẶT BÀN (ĐÃ FIX LỖI USER NULL & INVALID COLUMN)
-# ==============================================================================
-@restaurant_bp.route('/book-table', methods=['POST'], strict_slashes=False)
+# ==========================================================
+# 5. BOOK TABLE (Logic đặt bàn cũ của bạn)
+# ==========================================================
+@restaurant_bp.route("/book-table", methods=["POST"], strict_slashes=False)
+@cross_origin()
 def book_table_api():
-    print("\n" + "="*50)
-    print("🚀 [DEBUG] NHẬN YÊU CẦU ĐẶT BÀN (FIXED VERSION)")
-    
+    db = None
     try:
-        # 1. Lấy và làm sạch dữ liệu
-        data = request.json
-        print(f"📦 Payload gốc: {data}")
-        
-        # Lấy các trường thông tin (Hỗ trợ cả viết hoa và viết thường)
-        table_id = data.get('tableId') or data.get('TableID')
-        
-        # --- FIX QUAN TRỌNG: XỬ LÝ USER ID BỊ 'NULL' (STRING) ---
-        raw_user_id = data.get('userId') or data.get('UserID')
-        user_id = None
-        
-        # Nếu gửi lên là chuỗi "null" hoặc rỗng -> Gán mặc định là 1 (Guest)
-        if raw_user_id and str(raw_user_id).lower() != 'null':
-            try:
-                user_id = int(raw_user_id)
-            except:
-                user_id = 1
-        else:
-            user_id = 1 # Mặc định là ID 1 nếu không có User đăng nhập
-            
-        print(f"🔧 UserID sau khi xử lý: {user_id}")
+        data = request.json or {}
+        table_id = data.get("tableId")
+        user_id = int(data.get("userId") or 1) # Mặc định user 1 nếu null
 
-        # Lấy RestaurantID
-        res_id = data.get('restaurantId') or data.get('RestaurantID')
-        # Nếu không có RestaurantID, mặc định là 1 để tránh lỗi
-        final_res_id = res_id if res_id else 1
-
-        # Lấy số khách
-        num_guests = data.get('numberOfGuests') or data.get('NumberOfGuests') or 4
-        
-        # 2. Validate
-        if not table_id:
-            return jsonify({"message": "Thiếu thông tin TableID"}), 400
+        if not table_id: return jsonify({"message": "Thiếu TableID"}), 400
 
         db = DatabaseMSSQL()
-        session = db.session
-
-        # 3. THỰC THI SQL TRỰC TIẾP
+        repo = RestaurantRepository(db.session)
         
-        # A. Kiểm tra bàn
-        print("1️⃣ Đang kiểm tra trạng thái bàn...")
-        check_sql = text("SELECT Status FROM RestaurantTables WHERE TableID = :tid")
-        row = session.execute(check_sql, {'tid': table_id}).fetchone()
-
-        if not row:
-            return jsonify({"message": f"Bàn {table_id} không tồn tại trong Database"}), 404
-            
-        if row[0] == 'Booked':
-             return jsonify({"message": "Bàn này đã có người đặt trước đó!"}), 409
-
-        # B. INSERT vào Reservations
-        # Lưu ý: Cột ID người dùng là 'UserID' (nếu DB bạn dùng tên khác hãy sửa chỗ này)
-        print("2️⃣ Đang tạo Booking History...")
-        insert_sql = text("""
-            INSERT INTO Reservations 
-            (UserID, RestaurantID, TableID, ReservationTime, NumberOfGuests, Status, CreatedAt)
-            VALUES (:uid, :rid, :tid, GETDATE(), :guests, 'Pending', GETDATE())
-        """)
-        
-        session.execute(insert_sql, {
-            'uid': user_id,
-            'rid': final_res_id,
-            'tid': table_id,
-            'guests': num_guests
-        })
-
-        # C. UPDATE trạng thái bàn
-        # CHỈ UPDATE STATUS, KHÔNG ĐỤNG VÀO USERID Ở BẢNG NÀY
-        print("3️⃣ Đang cập nhật trạng thái bàn...")
-        update_sql = text("UPDATE RestaurantTables SET Status = 'Booked' WHERE TableID = :tid")
-        session.execute(update_sql, {'tid': table_id})
-
-        # 4. Commit
-        session.commit()
-        print("✅ THÀNH CÔNG RỰC RỠ!")
-        return jsonify({"message": "Đặt bàn thành công!", "status": "Booked"}), 200
+        # Kiểm tra và đặt bàn
+        if repo.book_table(table_id, user_id):
+            return jsonify({"message": "Đặt bàn thành công"}), 200
+        else:
+            # Nếu repo trả về False (do bàn đã book hoặc lỗi SQL)
+            # Bạn có thể check kỹ hơn ở repo để trả về 409 Conflict
+            return jsonify({"message": "Bàn đã được đặt hoặc lỗi server"}), 409
 
     except Exception as e:
-        print(f"❌ Lỗi CRASH Controller: {e}")
+        if db: db.session.rollback()
         traceback.print_exc()
-        if 'db' in locals() and db and db.session:
-            db.session.rollback()
-        return jsonify({"message": "Lỗi Server", "error": str(e)}), 500
+        return jsonify({"message": "Server error", "error": str(e)}), 500
     finally:
-        if 'db' in locals() and db: db.close()
+        if db: db.close()
+
+# ==========================================================
+# 6. DELETE & UPDATE (Giữ nguyên)
+# ==========================================================
+@restaurant_bp.route("/<int:id>", methods=["DELETE"])
+@cross_origin()
+def delete_restaurant(id):
+    db = None
+    try:
+        db = DatabaseMSSQL()
+        repo = RestaurantRepository(db.session)
+        service = RestaurantService(repo)
+        if service.delete_restaurant(id): return jsonify({"message": "Đã xoá"}), 200
+        return jsonify({"message": "Xoá thất bại"}), 400
+    except: return jsonify({"error": "Error"}), 500
+    finally:
+        if db: db.close()
+
+@restaurant_bp.route("/<int:id>", methods=["PUT"])
+@cross_origin()
+def update_restaurant(id):
+    db = None
+    try:
+        db = DatabaseMSSQL()
+        repo = RestaurantRepository(db.session)
+        service = RestaurantService(repo)
+        if service.update_restaurant(id, request.json): return jsonify({"message": "Đã cập nhật"}), 200
+        return jsonify({"message": "Cập nhật thất bại"}), 400
+    except: return jsonify({"error": "Error"}), 500
+    finally:
+        if db: db.close()

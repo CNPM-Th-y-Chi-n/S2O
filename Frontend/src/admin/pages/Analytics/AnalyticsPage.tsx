@@ -34,8 +34,8 @@ const insights = [
     iconColor: "text-green-600",
     iconBg: "bg-green-50",
     title: "Most Profitable Restaurant",
-    value: "Pizza Palace",
-    description: "$45,890 revenue this month",
+    value: "Phở Ông Hùng",
+    description: "	1.250.000.000đ revenue this month",
     suggestion: "Analyze their success patterns for other restaurants"
   },
   {

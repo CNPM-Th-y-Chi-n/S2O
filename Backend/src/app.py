@@ -1,68 +1,60 @@
+import os
+import sys
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
-from src.api.swagger import spec
 
-# ==========================================================
-# 1. IMPORT CONTROLLERS
-# ==========================================================
+# --- 1. IMPORT CONTROLLERS ---
+from src.api.controllers.auth_controller import auth_bp
 from src.api.controllers.restaurant_controller import restaurant_bp
-from src.api.controllers.order_controller import order_bp 
-from src.api.controllers.auth_controller import auth_bp  # 👈 Import Auth
-from src.api.controllers.ai_controller import ai_bp
+from src.api.controllers.order_controller import order_bp
 from src.api.controllers.user_controller import user_bp
+from src.api.controllers.ai_controller import ai_bp
+from src.api.controllers.review_controller import review_bp
+from src.api.controllers.table_controller import table_bp
+from src.api.controllers.menu_controller import menu_bp
 
 def create_app():
     app = Flask(__name__)
-    
-    # 2. Cấu hình CORS (Cho phép mọi nguồn truy cập - Quan trọng cho React)
+    app.config["SECRET_KEY"] = "super-secret-key-123"
+
+    # --- 2. CẤU HÌNH CORS ---
     CORS(app, resources={r"/*": {"origins": "*"}})
+
+    # --- 3. ĐĂNG KÝ BLUEPRINT (ROUTING) ---
     
-    app.config['SECRET_KEY'] = 'super-secret-key-123' 
-
-    # ==========================================================
-    # 3. ĐĂNG KÝ BLUEPRINT (ROUTER)
-    # ==========================================================
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
     
-    # -> API Authentication: /api/auth/signup, /api/auth/login
-    app.register_blueprint(auth_bp) 
+    # 👇 SỬA LẠI DÒNG NÀY (XÓA CHỮ 's' CUỐI CÙNG)
+    # Cũ: url_prefix="/api/restaurants" -> Sai so với Frontend
+    # Mới: url_prefix="/api/restaurant" -> ĐÚNG
+    app.register_blueprint(restaurant_bp, url_prefix="/api/restaurant") 
 
-    # -> API Nhà hàng
-    app.register_blueprint(restaurant_bp, url_prefix='/api/restaurants')
-
-    # -> API Đơn hàng
-    app.register_blueprint(order_bp, url_prefix='/api/orders')
-
-    # API AI
-    app.register_blueprint(ai_bp, url_prefix='/api/ai')
+    app.register_blueprint(order_bp, url_prefix="/api/order") 
+    app.register_blueprint(user_bp, url_prefix="/api/users")
+    app.register_blueprint(ai_bp, url_prefix="/api/ai")
+    app.register_blueprint(review_bp, url_prefix="/api/reviews")
     
-    # API User
-    app.register_blueprint(user_bp, url_prefix='/api/users')
+    # Giữ nguyên table và menu như bạn đã cấu hình
+    app.register_blueprint(table_bp, url_prefix="/api/table")
+    app.register_blueprint(menu_bp, url_prefix="/api/menu")
 
-    # 4. Cấu hình Swagger UI
-    SWAGGER_URL = '/docs'
-    API_URL = '/swagger.json'
-    swaggerui_blueprint = get_swaggerui_blueprint(
-        SWAGGER_URL,
-        API_URL,
-        config={'app_name': "Smart Restaurant API"}
-    )
+    # --- 4. SWAGGER ---
+    SWAGGER_URL = "/docs"
+    API_URL = "/swagger.json"
+    swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL, config={"app_name": "Smart Restaurant API"})
     app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-    # 5. Route cho file Swagger JSON
+    @app.route("/")
+    def index():
+        return jsonify({"message": "Server đang chạy ngon lành!"})
+
     @app.route("/swagger.json")
     def swagger_json():
-        return jsonify(spec.to_dict())
-    
-    # 6. Route trang chủ test
-    @app.route('/')
-    def home():
-        return "✅ Backend SmartRestaurant is running successfully!"
+        try:
+            from src.api.swagger import spec
+            return jsonify(spec.to_dict())
+        except:
+            return jsonify({"info": "Swagger spec not found"})
 
     return app
-
-if __name__ == '__main__':
-    app = create_app()
-    print("\n🚀 SERVER ĐANG KHỞI ĐỘNG TẠI: http://0.0.0.0:5000")
-    # Chạy host 0.0.0.0 để truy cập qua mạng LAN
-    app.run(host='0.0.0.0', port=5000, debug=True)

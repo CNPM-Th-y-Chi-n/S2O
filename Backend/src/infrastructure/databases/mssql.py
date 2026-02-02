@@ -5,8 +5,18 @@ from src.infrastructure.databases.base import Base
 
 # Database configuration
 DATABASE_URI = Config.DATABASE_URI
+
 engine = create_engine(DATABASE_URI)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-session = SessionLocal()
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+# ✅ HÀM CHUẨN – DÙNG Ở CONTROLLER
+def get_session():
+    return SessionLocal()
+
 def init_mssql(app):
     Base.metadata.create_all(bind=engine)

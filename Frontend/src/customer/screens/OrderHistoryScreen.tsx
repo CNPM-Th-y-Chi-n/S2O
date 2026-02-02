@@ -27,7 +27,7 @@ export function OrderHistoryScreen({ onBack }: OrderHistoryScreenProps) {
         if (!currentUserId) return;
 
         // 2. Gửi userId lên API (Thêm ?userId=...)
-        const response = await fetch(`http://localhost:5000/api/orders/history?userId=${currentUserId}`);
+        const response = await fetch(`http://localhost:5000/api/order/history?userId=${currentUserId}`);
         
         if (!response.ok) throw new Error("Lỗi kết nối server");
         

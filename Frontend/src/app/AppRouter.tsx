@@ -13,6 +13,8 @@ import { ProfileScreen } from "@/customer/screens/ProfileScreen";
 import { HomeScreen } from "@/customer/screens/HomeScreen";
 import RestaurantDetailScreen from "@/customer/screens/RestaurantDetailScreen";
 import { FavoritesScreen } from "@/customer/screens/FavoritesScreen";
+import Myreviews from "@/customer/screens/MyReviews";
+import AccountSettings from "../customer/screens/AccountSettings";
 
 import CustomerLayout from "../layouts/CustomerLayout";
 import AdminRouter from "@/admin/routes/AdminRouter";
@@ -41,6 +43,8 @@ export default function AppRouter() {
           <Route path="restaurant/:id" element={<RestaurantDetailScreen />} />
           <Route path="ai" element={<AIChatScreen />} />
           <Route path="profile" element={<ProfileScreen />} />
+          <Route path="reviews" element={<Myreviews />} />
+          <Route path="settings" element={<AccountSettings />} />
           
           {/* ✅ Đã có orders, nhưng link phải đúng là /customer/orders */}
           <Route path="orders" element={<OrderHistoryScreen />} /> 

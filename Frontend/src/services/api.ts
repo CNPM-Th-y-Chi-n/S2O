@@ -68,4 +68,13 @@ export const tableApi = {
     }
 };
 
+
+// ===== RESTAURANT API =====
+export const restaurantApi = {
+  getAll: () => api.get("/restaurants"),
+  create: (data: any) => api.post("/restaurants", data),
+  update: (id: number, data: any) => api.put(`/restaurants/${id}`, data),
+  delete: (id: number) => api.delete(`/restaurants/${id}`),
+};
+
 export default api; 

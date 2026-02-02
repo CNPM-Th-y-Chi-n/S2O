@@ -129,7 +129,7 @@ export function ProfileScreen({ onBack, onLogout }: ProfileScreenProps) {
         <div className="grid grid-cols-3 gap-4">
           <Card 
             className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => navigate('/orders')} // Click vào ô Orders cũng chuyển trang
+            onClick={() => navigate('/customer/orders')} // Click vào ô Orders cũng chuyển trang
           >
             <div className="text-2xl mb-1 font-bold text-blue-600">{displayProfile.stats.totalOrders}</div>
             <div className="text-xs text-muted-foreground">Orders</div>
@@ -137,7 +137,7 @@ export function ProfileScreen({ onBack, onLogout }: ProfileScreenProps) {
           
           <Card 
             className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => navigate('/reviews')}
+            onClick={() => navigate('/customer/reviews')}
           >
             <div className="text-2xl mb-1 font-bold text-yellow-500">{displayProfile.stats.reviews}</div>
             <div className="text-xs text-muted-foreground">Reviews</div>
@@ -145,7 +145,7 @@ export function ProfileScreen({ onBack, onLogout }: ProfileScreenProps) {
           
           <Card 
             className="p-4 text-center hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => navigate('/favorites')}
+            onClick={() => navigate('/customer/favorites')}
           >
             <div className="text-2xl mb-1 font-bold text-red-500">{displayProfile.stats.favorites}</div>
             <div className="text-xs text-muted-foreground">Favorites</div>
@@ -190,7 +190,7 @@ export function ProfileScreen({ onBack, onLogout }: ProfileScreenProps) {
           <Button 
             variant="outline" 
             className="w-full justify-start h-12" 
-            onClick={() => navigate('/settings')}
+            onClick={() => navigate('/customer/settings')}
           >
             <Settings className="w-4 h-4 mr-3 text-gray-500" />
             Account Settings

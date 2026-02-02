@@ -62,3 +62,10 @@ class RestaurantService:
         data['tables'] = [table.to_dict() for table in tables]
 
         return data
+    def delete_restaurant(self, restaurant_id):
+        return self.restaurant_repository.delete(restaurant_id)
+    def update_restaurant(self, restaurant_id, data):
+        return self.restaurant_repository.update(restaurant_id, data)
+    
+    def create_restaurant(self, data: dict) -> bool:
+        return self.restaurant_repository.create(data)

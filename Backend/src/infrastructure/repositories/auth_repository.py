@@ -63,6 +63,25 @@ class AuthRepository(IAuthRepository):
             print(f"❌ [ERROR REPO] Get User Failed: {e}")
             traceback.print_exc()
             return None
+    def update_user_info(self, user_id, new_username=None, new_fullname=None, new_password_hash=None):
+        try:
+            user = self.session.query(AuthUserModel).filter_by(id=user_id).first()
+            if not user:
+                return False
+            
+            if new_username:
+                user.username = new_username
+            if new_fullname:
+                user.fullname = new_fullname
+            if new_password_hash:
+                user.password = new_password_hash # password ở đây map với PasswordHash trong DB
+            
+            self.session.commit()
+            return True
+        except Exception as e:
+            self.session.rollback()
+            print(f"❌ [REPO ERROR] Update failed: {e}")
+            return False
 
     def add(self, auth: Auth) -> Optional[Auth]:
         try:

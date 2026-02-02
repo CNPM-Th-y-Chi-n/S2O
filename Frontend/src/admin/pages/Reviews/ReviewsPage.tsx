@@ -5,63 +5,77 @@ import { StatusBadge } from "@/admin/components";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 
+/* ================= MOCK DATA ================= */
+
 const reviews = [
   {
     id: 1,
-    customer: "John Doe",
-    customerAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-    restaurant: "Pizza Palace",
+    customer: "Chị Phiến",
+    customerAvatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQ0t93Uo6khtOycVpju5d2chs5jWUPt6m2NQ&s",
+    restaurant: "Com Tam Sai Gon",
     rating: 5,
-    comment: "Absolutely amazing! The pizza was fresh and delivered hot. Will definitely order again.",
+    comment: "Theo cảm nhận của chị thì chị thấy ngon đó mấy đứa.",
     date: "Dec 26, 2024",
     status: "Published",
-    helpful: 12
+    helpful: 12,
   },
   {
     id: 2,
-    customer: "Sarah Smith",
-    customerAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    restaurant: "Sushi Express",
-    rating: 4,
-    comment: "Great sushi quality but delivery took a bit longer than expected.",
+    customer: "Gojo Satoru",
+    customerAvatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSb8ocX1uyxWlO0NGGjiwM4w00ooWe9e3DMoA&s",
+    restaurant: "Phở Ông Hùng",
+    rating: 5,
+    comment: "Pho ngon lam may em oi, Thay an 1 to la muon an them 3 to nua.",
     date: "Dec 25, 2024",
     status: "Published",
-    helpful: 8
+    helpful: 8,
   },
   {
     id: 3,
-    customer: "Mike Johnson",
-    customerAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    restaurant: "Burger King",
+    customer: "Jeffrey Epstein",
+    customerAvatar: "https://media-cdn-v2.laodong.vn/storage/newsportal/2026/1/31/1649200/Epstein.jpg?w=800&h=496&crop=auto&scale=both",
+    restaurant: "Ốc Đêm Bình Thạnh",
     rating: 5,
-    comment: "Best burger I've had in a long time! Highly recommend the signature burger.",
+    comment: "Quán rất ngon, phục vụ tốt, nhân viên thân thiện.",
     date: "Dec 25, 2024",
     status: "Published",
-    helpful: 15
+    helpful: 15,
   },
   {
     id: 4,
-    customer: "Emma Wilson",
-    customerAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    restaurant: "Thai Delight",
+    customer: "Kim Jong-un",
+    customerAvatar: "https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcQkIrImYIUyQhFfuDoV3YMNjB8fjn2SSzB5eXZzTJgaa0AJApI1Cna8FANnt4wbLJo2NhkSDYViFYw2c98",
+    restaurant: "Bún Bò Huế Đông Ba",
     rating: 2,
-    comment: "Food was cold when it arrived and portions were small. Very disappointed.",
+    comment: "Đồ ăn không ngon lắm, phục vụ chậm.",
     date: "Dec 24, 2024",
     status: "Flagged",
-    helpful: 3
+    helpful: 3,
   },
   {
     id: 5,
-    customer: "David Lee",
-    customerAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    restaurant: "Cafe Mocha",
+    customer: "Vladimir Vladimirovich Putin",
+    customerAvatar: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcSuKVtn5rES43jkbXY24gKoppNtzdtE4MsH2JwmUgEVuQMvjy9kgakUnnrhUMI1mDczegjsNm7RBGKfMT0Pc0eICoGRMU_D5OpssO5B8IY-KAwbar5QdZG1cJ7uD7Tz8BZ0qPO3nHSH3io&s=19",
+    restaurant: "Baoz Dimsum",
     rating: 5,
-    comment: "Perfect coffee and pastries every time. My go-to morning spot!",
+    comment: "Tuyet voi! Sẽ quay lai.",
     date: "Dec 24, 2024",
     status: "Published",
-    helpful: 9
+    helpful: 9,
   },
 ];
+
+/* ================= DERIVED DATA ================= */
+
+const totalReviews = reviews.length;
+const flaggedReviews = reviews.filter(r => r.status === "Flagged").length;
+const fiveStarReviews = reviews.filter(r => r.rating === 5).length;
+
+const averageRating = (
+  reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+).toFixed(1);
+
+/* ================= COMPONENTS ================= */
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -70,15 +84,17 @@ function StarRating({ rating }: { rating: number }) {
         <Star
           key={star}
           className={`w-4 h-4 ${
-            star <= rating 
-              ? 'fill-yellow-400 text-yellow-400' 
-              : 'fill-gray-200 text-gray-200'
+            star <= rating
+              ? "fill-yellow-400 text-yellow-400"
+              : "fill-gray-200 text-gray-200"
           }`}
         />
       ))}
     </div>
   );
 }
+
+/* ================= PAGE ================= */
 
 export function ReviewsPage() {
   return (
@@ -93,7 +109,7 @@ export function ReviewsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Average Rating</p>
-                <h3 className="text-2xl font-semibold">4.6</h3>
+                <h3 className="text-2xl font-semibold">{averageRating}</h3>
               </div>
             </div>
           </CardContent>
@@ -107,7 +123,7 @@ export function ReviewsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Reviews</p>
-                <h3 className="text-2xl font-semibold">2,847</h3>
+                <h3 className="text-2xl font-semibold">{totalReviews}</h3>
               </div>
             </div>
           </CardContent>
@@ -121,7 +137,7 @@ export function ReviewsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">5-Star Reviews</p>
-                <h3 className="text-2xl font-semibold">1,892</h3>
+                <h3 className="text-2xl font-semibold">{fiveStarReviews}</h3>
               </div>
             </div>
           </CardContent>
@@ -135,7 +151,7 @@ export function ReviewsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Flagged Reviews</p>
-                <h3 className="text-2xl font-semibold">23</h3>
+                <h3 className="text-2xl font-semibold">{flaggedReviews}</h3>
               </div>
             </div>
           </CardContent>
@@ -179,11 +195,13 @@ export function ReviewsPage() {
                     <StarRating rating={review.rating} />
                   </TableCell>
                   <TableCell className="max-w-md">
-                    <p className="text-sm text-gray-600 line-clamp-2">{review.comment}</p>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {review.comment}
+                    </p>
                   </TableCell>
                   <TableCell className="text-gray-500">{review.date}</TableCell>
                   <TableCell>
-                    <StatusBadge 
+                    <StatusBadge
                       status={review.status}
                       variant={review.status === "Flagged" ? "danger" : "success"}
                     />
@@ -199,7 +217,11 @@ export function ReviewsPage() {
                       <Button variant="ghost" size="sm">
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
                         <Flag className="w-4 h-4" />
                       </Button>
                     </div>

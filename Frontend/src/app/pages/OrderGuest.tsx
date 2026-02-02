@@ -5,18 +5,18 @@ import {
     Clock, ChefHat, CheckCircle2, XCircle 
 } from "lucide-react";
 import axios from "axios";
-import { Button } from "../components/ui/button";
+import { Button } from "../components/ui/button"; // Đảm bảo bạn có component này
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 
-// Định nghĩa kiểu dữ liệu
+// Định nghĩa kiểu dữ liệu khớp với Backend
 interface OrderItem {
-  id: string; 
+  itemId: number; // Sửa id -> itemId cho khớp backend
   name: string;
   quantity: number;
   price: number;
-  status: 'pending' | 'confirmed' | 'cooking' | 'served' | 'cancelled'; // Các trạng thái có thể có
+  status: string; // Backend sẽ trả về string này
   note?: string;
 }
 
@@ -27,89 +27,73 @@ export default function OrderGuest() {
   const restaurantId = searchParams.get('restaurantId');
   const tableId = searchParams.get('tableId');
 
+  // Khởi tạo mảng rỗng để tránh lỗi null/undefined
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderStatus, setOrderStatus] = useState(""); // Trạng thái chung của đơn
 
   // --- HÀM LẤY DỮ LIỆU ---
   const fetchOrder = async () => {
     if (!tableId || !restaurantId) return;
     try {
-      // Gọi API Backend Python
-      const response = await axios.get(`http://192.168.1.81:5000/api/order/guest-current?restaurantId=${restaurantId}&tableId=${tableId}`);
-      setItems(response.data);
-    } catch (error) {
-      console.error("Lỗi cập nhật đơn hàng:", error);
+      const response = await axios.get(`http://192.168.1.81:5000/api/order/guest-current`, {
+        params: { restaurantId, tableId }
+      });
+      
+      // ✅ SỬA LỖI QUAN TRỌNG: Lấy .items từ response object
+      const data = response.data;
+      setItems(data.items || []); 
+      setOrderStatus(data.status); // Lưu trạng thái đơn hàng
+
+    } catch (error: any) {
+      // Nếu lỗi 404 (Chưa có đơn) -> Reset về rỗng
+      if (error.response && error.response.status === 404) {
+         setItems([]);
+         setOrderStatus("");
+      } else {
+         console.error("Lỗi cập nhật đơn hàng:", error);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- EFFECT: Lấy dữ liệu và TỰ ĐỘNG CẬP NHẬT mỗi 5 giây ---
+  // --- EFFECT: Polling mỗi 5 giây ---
   useEffect(() => {
-    fetchOrder(); // Gọi ngay lần đầu
-
-    // Thiết lập interval để tự động refresh trạng thái (Polling)
-    const intervalId = setInterval(() => {
-        fetchOrder();
-    }, 5000); // 5000ms = 5 giây
-
-    // Dọn dẹp khi thoát trang
+    fetchOrder();
+    const intervalId = setInterval(fetchOrder, 5000);
     return () => clearInterval(intervalId);
   }, [restaurantId, tableId]);
 
-  // --- LOGIC HIỂN THỊ TRẠNG THÁI (Màu sắc & Icon) ---
+  // --- MÀU SẮC TRẠNG THÁI ---
   const renderStatus = (status: string) => {
-    switch (status) {
-        case 'pending':
-            return (
-                <Badge variant="outline" className="text-yellow-600 border-yellow-600 bg-yellow-50">
-                    <Clock className="w-3 h-3 mr-1"/> Chờ xác nhận
-                </Badge>
-            );
-        case 'confirmed':
-        case 'cooking':
-            return (
-                <Badge variant="outline" className="text-blue-600 border-blue-600 bg-blue-50">
-                    <ChefHat className="w-3 h-3 mr-1"/> Đang chế biến
-                </Badge>
-            );
-        case 'served':
-        case 'completed':
-            return (
-                <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle2 className="w-3 h-3 mr-1"/> Đã lên món
-                </Badge>
-            );
-        case 'cancelled':
-            return (
-                <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
-                    <XCircle className="w-3 h-3 mr-1"/> Đã hủy
-                </Badge>
-            );
-        default:
-            return <Badge variant="outline">Đang xử lý</Badge>;
+    // Chuyển đổi về chữ thường để so sánh
+    const s = status?.toLowerCase() || 'pending';
+    
+    if (s === 'pending') {
+        return <Badge variant="outline" className="text-yellow-600 bg-yellow-50 border-yellow-200"><Clock className="w-3 h-3 mr-1"/> Đang chờ xác nhận</Badge>;
     }
+    if (s === 'confirmed' || s === 'cooking') {
+        return <Badge variant="outline" className="text-blue-600 bg-blue-50 border-blue-200"><ChefHat className="w-3 h-3 mr-1"/> Đang chế biến</Badge>;
+    }
+    if (s === 'served' || s === 'completed') {
+        return <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200"><CheckCircle2 className="w-3 h-3 mr-1"/> Đã lên món</Badge>;
+    }
+    if (s === 'cancelled') {
+        return <Badge variant="outline" className="text-red-600 bg-red-50 border-red-200"><XCircle className="w-3 h-3 mr-1"/> Đã hủy</Badge>;
+    }
+    return <Badge variant="outline">{status}</Badge>;
   };
 
-  // Tính tổng tiền (chỉ tính món chưa bị hủy)
-  const totalAmount = items
-    .filter(item => item.status !== 'cancelled')
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Điều hướng
   const handleOrderMore = () => {
-    if (restaurantId && tableId) {
-      navigate(`/menu?restaurantId=${restaurantId}&tableId=${tableId}`);
-    } else {
-      navigate("/menu");
-    }
+    navigate(`/menu?restaurantId=${restaurantId}&tableId=${tableId}`);
   };
 
   const handlePayment = () => {
-    const confirmed = window.confirm("Bạn muốn gọi nhân viên thanh toán?");
-    if (confirmed) {
-        alert("✅ Đã gửi yêu cầu thanh toán! Nhân viên sẽ đến ngay.");
-        // Ở đây bạn có thể gọi thêm API /notify-payment nếu muốn
+    if(window.confirm("Bạn muốn gọi nhân viên thanh toán?")) {
+        alert("✅ Đã gửi yêu cầu! Nhân viên sẽ đến ngay.");
     }
   };
 
@@ -121,22 +105,20 @@ export default function OrderGuest() {
           <ChevronLeft className="w-6 h-6" />
         </Button>
         <div>
-          <h1 className="font-bold text-lg">Theo dõi đơn hàng</h1>
-          <p className="text-xs text-gray-500">
-            {tableId ? `Bàn số ${tableId}` : 'Chưa chọn bàn'}
-          </p>
+          <h1 className="font-bold text-lg">Đơn hàng của bạn</h1>
+          <p className="text-xs text-gray-500">{tableId ? `Bàn số ${tableId}` : 'Smart Restaurant'}</p>
         </div>
       </div>
 
       {/* CONTENT */}
       <div className="p-4 space-y-4">
         {loading && items.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">Đang tải trạng thái...</div>
+          <div className="text-center py-10 text-gray-400">Đang tải...</div>
         ) : items.length === 0 ? (
           <div className="text-center py-10 text-gray-400 flex flex-col items-center">
             <Receipt className="w-12 h-12 mb-2 opacity-50" />
-            <p>Bàn chưa gọi món nào.</p>
-            <Button className="mt-4 bg-orange-600 hover:bg-orange-700" onClick={handleOrderMore}>
+            <p>Bạn chưa gọi món nào.</p>
+            <Button className="mt-4 bg-orange-600 hover:bg-orange-700 text-white" onClick={handleOrderMore}>
                 Xem Menu ngay
             </Button>
           </div>
@@ -144,7 +126,7 @@ export default function OrderGuest() {
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex justify-between">
-                <span>Món đã gọi</span>
+                <span>Danh sách món</span>
                 <span className="text-sm font-normal text-gray-500">{items.length} món</span>
               </CardTitle>
             </CardHeader>
@@ -157,15 +139,11 @@ export default function OrderGuest() {
                     </div>
                     <div>
                       <div className="font-medium text-gray-800">{item.name}</div>
-                      {item.note && <div className="text-xs text-gray-400 italic">Ghi chú: {item.note}</div>}
-                      
-                      {/* --- HIỂN THỊ TRẠNG THÁI Ở ĐÂY --- */}
-                      <div className="mt-2 animate-in fade-in">
-                        {renderStatus(item.status)}
-                      </div>
+                      {item.note && <div className="text-xs text-gray-400 italic">Note: {item.note}</div>}
+                      <div className="mt-1">{renderStatus(item.status)}</div>
                     </div>
                   </div>
-                  <div className="font-semibold text-gray-700 whitespace-nowrap ml-2">
+                  <div className="font-semibold text-gray-700">
                     {(item.price * item.quantity).toLocaleString('vi-VN')}đ
                   </div>
                 </div>
@@ -174,7 +152,7 @@ export default function OrderGuest() {
               <Separator className="my-4" />
               
               <div className="flex justify-between items-center pt-2">
-                <span className="font-bold text-lg">Tạm tính</span>
+                <span className="font-bold text-lg">Tổng cộng</span>
                 <span className="font-bold text-xl text-orange-600">{totalAmount.toLocaleString('vi-VN')}đ</span>
               </div>
             </CardContent>
@@ -182,23 +160,13 @@ export default function OrderGuest() {
         )}
       </div>
 
-      {/* FOOTER ACTIONS */}
+      {/* FOOTER */}
       <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] flex gap-3 z-20">
-        <Button 
-            variant="outline" 
-            className="flex-1 border-orange-600 text-orange-600 hover:bg-orange-50" 
-            onClick={handleOrderMore}
-        >
-          <UtensilsCrossed className="w-4 h-4 mr-2" />
-          Gọi thêm
+        <Button variant="outline" className="flex-1 border-orange-600 text-orange-600" onClick={handleOrderMore}>
+          <UtensilsCrossed className="w-4 h-4 mr-2" /> Gọi thêm
         </Button>
-        <Button 
-            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-            onClick={handlePayment}
-            disabled={items.length === 0}
-        >
-          <CreditCard className="w-4 h-4 mr-2" />
-          Thanh toán
+        <Button className="flex-1 bg-orange-600 hover:bg-orange-700 text-white" onClick={handlePayment} disabled={items.length === 0}>
+          <CreditCard className="w-4 h-4 mr-2" /> Thanh toán
         </Button>
       </div>
     </div>

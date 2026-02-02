@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Search, ChevronLeft, Plus, Minus, X, MessageSquare } from "lucide-react"; // Đã thêm icon MessageSquare
+import { Search, ChevronLeft, Plus, Minus, X, MessageSquare } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { useCart } from "@/app/context/CartContext"; 
 import api from "@/services/api"; 
 
 /* ================= TYPES ================= */
+// Cập nhật Interface để linh hoạt hơn
 interface MenuItemData {
-  id: number;
+  id: number;           // Frontend dùng cái này
+  MenuItemID?: number;  // Backend có thể trả về cái này
   name: string;
   description: string;
   price: number;
@@ -36,8 +38,6 @@ export default function MenuPage() {
   // State cho Modal
   const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
   const [quantity, setQuantity] = useState(1);
-  
-  // 🔥 1. MỚI: State lưu ghi chú
   const [note, setNote] = useState(""); 
 
   const [loading, setLoading] = useState(true);
@@ -50,11 +50,23 @@ export default function MenuPage() {
       try {
         setLoading(true);
         const response = await api.get(`/menu?restaurantId=${restaurantId}`);
-        const data: MenuItemData[] = response.data;
-        setMenuItems(data);
+        
+        // 🔥 QUAN TRỌNG: Map dữ liệu để đảm bảo luôn có ID
+        const rawData = response.data || [];
+        const mappedData: MenuItemData[] = rawData.map((item: any) => ({
+            ...item,
+            // Ưu tiên lấy id, nếu không có thì lấy MenuItemID, nếu không thì lấy index ngẫu nhiên (phòng hờ)
+            id: item.id || item.MenuItemID || Math.random(), 
+            // Đảm bảo category luôn là chuỗi
+            category: item.Category || item.category || "Other" 
+        }));
 
-        const uniqueCats = Array.from(new Set(data.map(item => item.category)));
+        setMenuItems(mappedData);
+
+        // Lọc danh mục duy nhất (loại bỏ trùng lặp và loại bỏ null)
+        const uniqueCats = Array.from(new Set(mappedData.map(item => item.category))).filter(Boolean);
         setCategories(["All", ...uniqueCats]);
+
       } catch (error) {
         console.error("Lỗi tải menu:", error);
       } finally {
@@ -67,7 +79,8 @@ export default function MenuPage() {
 
   // --- FILTER LOGIC ---
   const filteredItems = menuItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const itemName = item.name || ""; // Phòng trường hợp name null
+    const matchesSearch = itemName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = activeCategory === "All" || item.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
@@ -76,17 +89,17 @@ export default function MenuPage() {
   const openModal = (item: MenuItemData) => {
     setSelectedItem(item);
     setQuantity(1);
-    setNote(""); // 🔥 2. MỚI: Reset ghi chú khi mở món mới
+    setNote(""); 
   };
 
   const handleAddToCart = () => {
     if (selectedItem) {
       addToCart({
-        itemId: selectedItem.id,
+        itemId: selectedItem.id, // ID chắc chắn đã tồn tại nhờ bước map ở trên
         name: selectedItem.name,
         price: selectedItem.price,
         quantity: quantity,
-        note: note // 🔥 3. MỚI: Gửi ghi chú vào giỏ hàng
+        note: note 
       });
       setSelectedItem(null);
     }
@@ -105,14 +118,12 @@ export default function MenuPage() {
             items: cart.map(item => ({
                 itemId: item.itemId,
                 quantity: item.quantity,
-                note: item.note // Đã có note từ handleAddToCart
+                note: item.note 
             }))
         };
 
         await api.post('/order/submit', payload);
-        
         if (clearCart) clearCart(); 
-
         navigate(`/guest-order?restaurantId=${restaurantId}&tableId=${tableId}`);
 
     } catch (error) {
@@ -149,9 +160,10 @@ export default function MenuPage() {
 
         {/* CATEGORY TABS */}
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          {categories.map((cat) => (
+          {categories.map((cat, index) => (
             <button
-              key={cat}
+              // 🔥 FIX KEY: Dùng kết hợp cat và index để chắc chắn không trùng
+              key={`${cat}-${index}`} 
               onClick={() => setActiveCategory(cat)}
               className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors border
                 ${activeCategory === cat 
@@ -172,6 +184,7 @@ export default function MenuPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {filteredItems.map((item) => (
                 <div 
+                    // 🔥 FIX KEY: ID đã được chuẩn hóa ở useEffect, đảm bảo unique
                     key={item.id} 
                     className="bg-white rounded-2xl p-3 shadow-sm flex gap-4 cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => openModal(item)}
@@ -188,7 +201,7 @@ export default function MenuPage() {
                         </div>
                         <div className="flex justify-between items-end">
                             <span className="font-bold text-orange-600">
-                                {item.price.toLocaleString('vi-VN')}đ
+                                {item.price?.toLocaleString('vi-VN')}đ
                             </span>
                             <div className="bg-orange-100 p-1.5 rounded-full text-orange-600">
                                 <Plus className="w-4 h-4" />
@@ -214,7 +227,7 @@ export default function MenuPage() {
               <X className="w-5 h-5 text-gray-700" />
             </button>
 
-            {/* Ảnh món (Scrollable Area Start) */}
+            {/* Ảnh món */}
             <div className="overflow-y-auto">
                 <div className="h-64 w-full bg-gray-100">
                     <img
@@ -230,7 +243,7 @@ export default function MenuPage() {
                         {selectedItem.description}
                     </p>
 
-                    {/* 🔥 4. MỚI: GIAO DIỆN NHẬP GHI CHÚ */}
+                    {/* GIAO DIỆN NHẬP GHI CHÚ */}
                     <div className="mt-6">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                             <MessageSquare className="w-4 h-4" />
@@ -247,7 +260,7 @@ export default function MenuPage() {
                 </div>
             </div>
 
-            {/* Footer cố định: Số lượng & Nút thêm */}
+            {/* Footer */}
             <div className="p-6 pt-2 bg-white border-t border-gray-50 mt-auto">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-4 bg-gray-100 rounded-full px-4 py-2">

@@ -10,19 +10,13 @@ class AuthService:
 
     def register(self, username, password, email):
         print(f"🚀 [SERVICE] Đăng ký User mới: {username}")
-        
         try:
-            # 1. Kiểm tra user tồn tại
             if self.repository.check_exist(username):
                 print(f"⚠️ [SERVICE] Username '{username}' đã tồn tại!")
                 return None
             
-            # 2. Mã hóa mật khẩu
             hashed_password = generate_password_hash(password)
             
-            # 3. Tạo đối tượng Domain Auth
-            # 🔥 ĐÃ SỬA: Xóa passwordcomfirm vì Model SQLAlchemy không chứa cột này
-            # 🔥 ĐÃ SỬA: Thêm lại role="Customer" vì trong Model của bạn có tham số này
             auth = Auth(
                 username=username,
                 password=hashed_password, 
@@ -30,9 +24,7 @@ class AuthService:
                 role="Customer"
             )
             
-            # 4. Gọi Repo lưu vào DB
             return self.repository.add(auth)
-
         except Exception as e:
             print(f"❌ [SERVICE ERROR] Lỗi khi đăng ký: {e}")
             traceback.print_exc() 
@@ -41,31 +33,38 @@ class AuthService:
     def login(self, username, password):
         print(f"🚀 [SERVICE] Đang đăng nhập: {username}")
         try:
-            # 1. Gọi Repo lấy thông tin User từ DB
             user = self.repository.get_by_username(username)
             
-            # 2. Kiểm tra User có tồn tại không
             if not user:
-                print("❌ [SERVICE] User không tìm thấy trong DB")
+                print(f"❌ [SERVICE] Không tìm thấy Username: {username}")
                 return None
 
-            # 3. So sánh mật khẩu
-            # Dùng getattr để lấy giá trị mật khẩu an toàn (phòng trường hợp tên cột bị đổi)
-            db_password = getattr(user, 'password', getattr(user, 'PasswordHash', None))
+            # Lấy chuỗi hash từ DB
+            raw_db_password = getattr(user, 'password', None) or \
+                              getattr(user, 'PasswordHash', None) or \
+                              (user.__dict__.get('password') if hasattr(user, '__dict__') else None)
+
+            # 👇 CẢI TIẾN QUAN TRỌNG: Thêm .strip() để loại bỏ khoảng trắng dư thừa từ SQL CHAR/NCHAR
+            db_password = raw_db_password.strip() if raw_db_password else None
+
+            # --- DEBUG ĐÃ CẬP NHẬT ---
+            print(f"🔍 [DEBUG] Mật khẩu từ DB (đã strip): '{db_password}'")
+            print(f"🔍 [DEBUG] Mật khẩu người dùng nhập: '{password}'")
 
             if not db_password:
-                print("❌ [SERVICE] Không tìm thấy cột mật khẩu trong User Model")
+                print("❌ [SERVICE] Lỗi: Không lấy được chuỗi PasswordHash!")
                 return None
 
+            # So sánh
             if check_password_hash(db_password, password):
-                print("✅ [SERVICE] Mật khẩu chính xác!")
+                print("✅ [SERVICE] Đăng nhập thành công!")
                 return user
             else:
-                print("❌ [SERVICE] Mật khẩu SAI!")
+                print("❌ [SERVICE] Mật khẩu vẫn không khớp!")
                 return None
                 
         except Exception as e:
-            print(f"💥 [SERVICE CRASH] Lỗi Login: {e}")
+            print(f"💥 [SERVICE CRASH]: {e}")
             traceback.print_exc() 
             return None
 

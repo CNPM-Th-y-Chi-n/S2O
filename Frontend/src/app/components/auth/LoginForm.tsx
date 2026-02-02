@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Lock, Eye, EyeOff, User, ShieldCheck, ChefHat } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-// 👇 Đảm bảo đường dẫn này đúng với dự án của bạn
 import api from "../../../services/api"; 
 
+// Khai báo kiểu dữ liệu cho Role ở Frontend
 type UserRole = 'user' | 'admin' | 'staff';
 
 export default function LoginForm() {
   const navigate = useNavigate();
   
-  // State
+  // State quản lý form
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,100 +17,77 @@ export default function LoginForm() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('user');
   const [loading, setLoading] = useState(false);
 
-  // Cấu hình giao diện cho từng Role
-  const roles: { id: UserRole; label: string; icon: any; color: string }[] = [
-    { id: 'user', label: 'Customer', icon: User, color: 'from-blue-500 to-blue-600' },
-    { id: 'staff', label: 'Restaurant Staff', icon: ChefHat, color: 'from-orange-500 to-orange-600' },
-    { id: 'admin', label: 'Administrator', icon: ShieldCheck, color: 'from-purple-500 to-purple-600' },
+  // Cấu hình giao diện cho từng vai trò
+  const roles: { id: UserRole; label: string; icon: any; color: string; dbValue: string }[] = [
+    { id: 'user', label: 'Customer', icon: User, color: 'from-blue-500 to-blue-600', dbValue: 'Customer' },
+    { id: 'staff', label: 'Restaurant Staff', icon: ChefHat, color: 'from-orange-500 to-orange-600', dbValue: 'Staff' },
+    { id: 'admin', label: 'Administrator', icon: ShieldCheck, color: 'from-purple-500 to-purple-600', dbValue: 'Admin' },
   ];
 
   const currentRole = roles.find(r => r.id === selectedRole) || roles[0];
 
   // =================================================================
-  // 👇 HÀM XỬ LÝ ĐĂNG NHẬP (ĐÃ FIX LỖI UserID)
+  // XỬ LÝ ĐĂNG NHẬP
   // =================================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // Chuẩn bị dữ liệu gửi lên Backend
+    // Gửi kèm 'role' để Backend đối chiếu với Role thực tế trong DB
     const loginData = {
       username: username,
       password: password,
+      role: currentRole.dbValue // Gửi "Customer", "Staff" hoặc "Admin"
     };
 
-    console.log('🚀 Đang gửi login:', loginData);
+    console.log('🚀 Gửi yêu cầu đăng nhập:', loginData);
 
     try {
-      // 1. Gọi API
+      // 1. Gọi API Login
       const res = await api.post("/auth/login", loginData);
 
-      // 2. Xử lý khi thành công
       if (res.status === 200) {
-        console.log("📡 Full Server Response:", res.data);
-
         const data = res.data;
-        
-        // --- A. Lấy Token ---
-        const token = data.token || data.accessToken || data.access_token;
-        
-        // --- B. Lấy Object User ---
-        // Backend có thể trả về: { user: {...} } hoặc { data: {...} } hoặc phẳng {...}
-        const userObj = data.user || data.data || data;
+        const token = data.token || data.accessToken;
+        const userObj = data.user || data;
 
-        // --- C. Lấy User ID (QUAN TRỌNG: Đã thêm UserID viết hoa) ---
-        // Dựa vào ảnh database của bạn, cột tên là "UserID"
-        const userId = userObj.UserID || userObj.id || userObj.userId || userObj.User_ID || userObj._id || data.UserID;
-
-        console.log("✅ ID tìm thấy:", userId);
-
-        if (!userId) {
-            alert(`Lỗi: Không tìm thấy UserID. Server trả về: ${JSON.stringify(userObj)}`);
-            setLoading(false);
-            return;
-        }
-
-        if (!token) {
-            alert("Lỗi: Server không trả về Token!");
-            setLoading(false);
-            return;
-        }
-
-        // --- D. Lưu vào LocalStorage ---
+        // --- A. Lưu thông tin xác thực vào LocalStorage ---
         localStorage.setItem('token', token);
         
-        // 🔥 Lưu ID dưới dạng chuỗi (tránh undefined)
+        // Lấy ID chuẩn từ DB (ưu tiên UserID viết hoa theo DB của bạn)
+        const userId = userObj.UserID || userObj.id;
         localStorage.setItem('userId', String(userId)); 
-        
-        // Lưu toàn bộ object user để dùng chỗ khác
         localStorage.setItem('user', JSON.stringify(userObj));
         
-        // Lưu role (Ưu tiên role từ DB trả về, nếu không có thì lấy role đang chọn)
-        // Database của bạn cột Role viết hoa chữ R (Role), nên cần check cả userObj.Role
-        const finalRole = userObj.Role || userObj.role || selectedRole;
-        localStorage.setItem('role', finalRole);
+        // --- B. Lấy Role thật từ Database trả về ---
+        const dbRole = (userObj.Role || userObj.role || '').toLowerCase();
+        localStorage.setItem('role', dbRole);
         
-        // Lưu Username (Database viết hoa chữ U: Username)
         const finalUsername = userObj.Username || userObj.username || username;
         localStorage.setItem('username', finalUsername);
 
-        // --- E. Điều hướng ---
-        alert(`Đăng nhập thành công! Xin chào ${finalUsername}`);
+        console.log("✅ Đăng nhập thành công. Role thực tế:", dbRole);
 
-        const normalizedRole = String(finalRole).toLowerCase();
-        
-        if (normalizedRole === 'admin') {
-           navigate('/admin');
-        } else if (normalizedRole.includes('staff') || normalizedRole.includes('manager') || normalizedRole.includes('kitchen') || normalizedRole.includes('service')) {
-           // Database bạn có các role: Manager, Kitchen, Service -> Đều cho vào trang staff
-           navigate('/staff'); 
+        // --- C. ĐIỀU HƯỚNG DỰA TRÊN ROLE THỰC TẾ ---
+        if (dbRole === 'admin') {
+          navigate('/admin');
+        } else if (['staff', 'manager', 'kitchen', 'service'].includes(dbRole)) {
+          // Gom nhóm các role nhân viên vào trang staff
+          navigate('/staff'); 
         } else {
-           // Là Customer
-           navigate('/customer/home'); 
+          // Mặc định là khách hàng
+          navigate('/customer/home'); 
         }
       }
     } catch (err: any) {
       console.error("❌ Lỗi đăng nhập:", err);
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || "Đăng nhập thất bại. Vui lòng kiểm tra lại!";
+      
+      // Lấy thông báo lỗi từ Backend (Ví dụ: "Tài khoản không có quyền Admin")
+      const errorMessage = err.response?.data?.error || 
+                           err.response?.data?.message || 
+                           "Đăng nhập thất bại. Vui lòng kiểm tra lại!";
+      
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -128,13 +105,14 @@ export default function LoginForm() {
           </div>
         </div>
         <h2 className="text-3xl font-bold text-center mb-2">Welcome Back</h2>
-        <p className="text-center text-white/80 text-sm">Sign in to continue to Scan2Order</p>
+        <p className="text-center text-white/80 text-sm">Sign in as {currentRole.label}</p>
 
         {/* Role Selector Tabs */}
         <div className="flex justify-center mt-6 bg-black/10 p-1 rounded-xl">
           {roles.map((role) => (
             <button
               key={role.id}
+              type="button"
               onClick={() => setSelectedRole(role.id)}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 ${
                 selectedRole === role.id 
@@ -148,10 +126,10 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Form Content */}
+      {/* Form đăng nhập */}
       <form onSubmit={handleSubmit} className="p-8 space-y-6">
         
-        {/* Username Input */}
+        {/* Username */}
         <div className="space-y-2">
           <label className="text-sm font-bold text-gray-600 ml-1">Username</label>
           <div className="relative group">
@@ -163,13 +141,13 @@ export default function LoginForm() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+              className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-gray-50 focus:bg-white"
               placeholder="Enter your username"
             />
           </div>
         </div>
 
-        {/* Password Input */}
+        {/* Password */}
         <div className="space-y-2">
           <label className="text-sm font-bold text-gray-600 ml-1">Password</label>
           <div className="relative group">
@@ -181,20 +159,20 @@ export default function LoginForm() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+              className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-gray-50 focus:bg-white"
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
         </div>
 
-        {/* Remember Me & Forgot Password */}
+        {/* Remember & Forgot */}
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <input
@@ -217,22 +195,23 @@ export default function LoginForm() {
           </button>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-gradient-to-r ${currentRole.color} text-white py-3.5 rounded-xl font-bold text-lg hover:shadow-xl transition-all shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed`}
+          className={`w-full bg-gradient-to-r ${currentRole.color} text-white py-3.5 rounded-xl font-bold text-lg hover:shadow-xl transition-all shadow-md active:scale-95 disabled:opacity-70`}
         >
           {loading ? "Signing in..." : `Sign In as ${currentRole.label}`}
         </button>
       </form>
 
-      {/* Sign Up Link (Chỉ hiện cho User) */}
+      {/* Link đăng ký - Chỉ hiện khi chọn vai trò User */}
       {selectedRole === 'user' && (
         <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
             <button
+              type="button"
               onClick={() => navigate("/signup")}
               className="text-indigo-600 hover:text-indigo-700 font-bold"
             >

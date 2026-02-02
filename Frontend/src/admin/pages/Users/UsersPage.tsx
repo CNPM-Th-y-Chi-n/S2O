@@ -1,4 +1,5 @@
-import { Search, Eye, Ban } from "lucide-react";
+import { useState } from "react";
+import { Search, Eye, Ban, Filter } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui/table";
 import { StatusBadge } from "@/admin/components";
@@ -11,13 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { Filter } from "lucide-react";
 
+/* ================= MOCK DATA ================= */
 const users = [
   {
     id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
+    name: "Gojo Satoru",
+    email: "gojosatoru@example.com",
     role: "Customer",
     status: "Active",
     createdDate: "Jan 15, 2024",
@@ -25,8 +26,8 @@ const users = [
   },
   {
     id: 2,
-    name: "Sarah Smith",
-    email: "sarah.smith@pizzapalace.com",
+    name: "Thai Huy",
+    email: "ThaiHuy@phoonghung.com",
     role: "Restaurant Staff",
     status: "Active",
     createdDate: "Feb 3, 2024",
@@ -34,8 +35,8 @@ const users = [
   },
   {
     id: 3,
-    name: "Mike Johnson",
-    email: "mike.j@example.com",
+    name: "Pham Gia Huy",
+    email: "phamgia.huy@example.com",
     role: "Customer",
     status: "Active",
     createdDate: "Mar 12, 2024",
@@ -52,16 +53,16 @@ const users = [
   },
   {
     id: 5,
-    name: "Emma Wilson",
-    email: "emma.w@example.com",
+    name: "Kha Banh",
+    email: "khabanh@example.com",
     role: "Customer",
     status: "Suspended",
-    createdDate: "Apr 8, 2024",
-    lastLogin: "2 weeks ago"
+    createdDate: "Apr 8, 2019",
+    lastLogin: "7 years ago"
   },
   {
     id: 6,
-    name: "David Lee",
+    name: "Master Chef David",
     email: "david@sushiexpress.com",
     role: "Restaurant Staff",
     status: "Active",
@@ -79,35 +80,48 @@ const users = [
   },
 ];
 
+/* ================= COMPONENT ================= */
 export function UsersPage() {
+  const [selectedRole, setSelectedRole] = useState("all");
+
+  /* ===== FILTER LOGIC ===== */
+  const filteredUsers = users.filter((user) => {
+    if (selectedRole === "all") return true;
+    return user.role.toLowerCase().replace(" ", "-") === selectedRole;
+  });
+
   return (
     <div className="space-y-6">
-      {/* Header Actions */}
+      {/* ================= HEADER ACTIONS ================= */}
       <div className="flex items-center gap-3">
-        {/* Search */}
+        {/* Search (UI only for now) */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input 
-            type="text" 
-            placeholder="Search users by name or email..." 
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search users by name or email..."
             className="pl-10"
           />
         </div>
 
-        {/* Filters */}
-        <Select defaultValue="all-roles">
+        {/* ===== ROLE FILTER ===== */}
+        <Select
+          value={selectedRole}
+          onValueChange={setSelectedRole}
+        >
           <SelectTrigger className="w-48">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all-roles">All Roles</SelectItem>
+            <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
             <SelectItem value="restaurant-staff">Restaurant Staff</SelectItem>
             <SelectItem value="customer">Customer</SelectItem>
           </SelectContent>
         </Select>
 
+        {/* Status filter – giữ UI, chưa xử lý */}
         <Select defaultValue="all-status">
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Status" />
@@ -120,7 +134,7 @@ export function UsersPage() {
         </Select>
       </div>
 
-      {/* Users Table */}
+      {/* ================= USERS TABLE ================= */}
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
@@ -139,15 +153,22 @@ export function UsersPage() {
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <StatusBadge 
+                    <StatusBadge
                       status={user.role}
-                      variant={user.role === "Admin" ? "danger" : user.role === "Restaurant Staff" ? "info" : "default"}
+                      variant={
+                        user.role === "Admin"
+                          ? "danger"
+                          : user.role === "Restaurant Staff"
+                          ? "info"
+                          : "default"
+                      }
                     />
                   </TableCell>
                   <TableCell>
@@ -160,13 +181,25 @@ export function UsersPage() {
                       <Button variant="ghost" size="sm">
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
                         <Ban className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
+
+              {filteredUsers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-gray-500 py-6">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
