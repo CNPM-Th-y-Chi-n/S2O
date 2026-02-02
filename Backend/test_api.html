@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Test API Đồ Án</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .box { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        button { cursor: pointer; padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Kết Nối API Backend</h1>
+
+    <div class="box">
+        <h3>1. Đăng nhập (Lấy Token)</h3>
+        <input type="text" id="username" placeholder="Username" value="admin">
+        <input type="password" id="password" placeholder="Password" value="123456">
+        <button onclick="handleLogin()">Login</button>
+        <p><strong>Token hiện tại:</strong> <span id="token_display" style="color:red">Chưa có</span></p>
+    </div>
+
+    <div class="box">
+        <h3>2. Lấy danh sách Todos (Cần Token)</h3>
+        <button onclick="getTodos()">Gọi API /todos</button>
+        <div id="result">Kết quả sẽ hiện ở đây...</div>
+    </div>
+
+    <script>
+        // Cấu hình đường dẫn API (Đúng port bạn đang chạy: 5000)
+        const BASE_URL = 'http://127.0.0.1:5000'; 
+        let currentToken = '';
+
+        // Hàm Login
+        async function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Lưu token lại
+                    currentToken = data.token; 
+                    document.getElementById('token_display').innerText = "Đã lấy được Token!";
+                    alert("Đăng nhập thành công!");
+                    console.log("Token:", currentToken);
+                } else {
+                    alert("Lỗi đăng nhập: " + JSON.stringify(data));
+                }
+            } catch (error) {
+                alert("Lỗi kết nối! Kiểm tra xem Server đã bật chưa?");
+                console.error(error);
+            }
+        }
+
+        // Hàm lấy Todos
+        async function getTodos() {
+            if (!currentToken) {
+                alert("⚠️ Bạn chưa có Token! Hãy đăng nhập trước.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/todos/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // QUAN TRỌNG: Gửi Token kèm theo request
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                // Hiển thị kết quả ra màn hình
+                document.getElementById('result').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('result').innerText = "Lỗi gọi API: " + error;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+pip install psycopg2-binary
+pip install pyodbc
+pip install PyJWT flask-jwt-extended
+pip install flask-bcrypt pyjwt
+pip install flask-cors
+python -m pip install flask-cors
