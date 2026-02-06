@@ -17,7 +17,7 @@ const AccountSettings: React.FC = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://192.168.1.81:5000/api/auth/update-settings', 
+            const response = await axios.post('http://192.168.1.96:5000/api/auth/update-settings', 
                 { username, fullname, oldPassword, newPassword },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

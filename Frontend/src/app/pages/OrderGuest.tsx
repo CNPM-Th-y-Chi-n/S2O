@@ -36,7 +36,7 @@ export default function OrderGuest() {
   const fetchOrder = async () => {
     if (!tableId || !restaurantId) return;
     try {
-      const response = await axios.get(`http://192.168.1.81:5000/api/order/guest-current`, {
+      const response = await axios.get(`http://192.168.1.96:5000/api/order/guest-current`, {
         params: { restaurantId, tableId }
       });
       

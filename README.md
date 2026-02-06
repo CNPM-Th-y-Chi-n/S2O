@@ -47,7 +47,12 @@ npm install
 
 Để chương trình hoạt động tốt nhất hãy chạy cả 2 thư mục frontend và backend cùng nhau.
 
-Ở thư mục frontend hãy tìm kiếm và thay đổi ip 192.168.1.81 thành ip mạng của bạn để có thể chạy frontend trên các thiết bị cùng mạng LAN hoặc chạy ở trang localhost.
+Ở thư mục frontend hãy tìm kiếm và thay đổi ip 192.168.1.96 thành ip mạng của bạn để có thể chạy frontend trên các thiết bị cùng mạng LAN hoặc chạy ở trang localhost.
+
+http://192.168.1.96:5173/?restaurantId=2&tableId=3
+#Nhà hàng 2 bàn số 3
+# Thay ip bằng ip của người dùng
+# tìm ip bằng cách mở cmd lệnh ipconfig
 
 Khởi tạo file .env ở thư mục backend
 FLASK_ENV=development
@@ -61,4 +66,6 @@ DB_PORT=1433
 DB_NAME="SmartRestaurant" //Tendatabase
 
 # Chuỗi kết nối cho SQLAlchemy (Lưu ý %40 thay cho @ trong mật khẩu)
-DATABASE_URI="mssql+pymssql://sa:0907365749@127.0.0.1:1433/SmartRestaurant"
+DATABASE_URI="mssql+pymssql://username:password@127.0.0.1:1433/SmartRestaurant(databasename)"
+
+

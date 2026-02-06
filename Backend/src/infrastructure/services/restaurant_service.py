@@ -136,3 +136,5 @@ class RestaurantService:
             d.pop('_sa_instance_state', None)
             return d
         return obj
+    def get_tables_by_restaurant(self, restaurant_id):
+        return self.repository.get_tables_by_restaurant(restaurant_id)

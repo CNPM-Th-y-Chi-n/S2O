@@ -20,7 +20,7 @@ const MyReviews: React.FC = () => {
     const fetchReviews = async () => {
       try {
         const token = localStorage.getItem('token'); // Lấy JWT Token đã lưu khi Login
-        const response = await axios.get('http://192.168.1.81:5000/api/reviews/my-reviews', {
+        const response = await axios.get('http://192.168.1.96:5000/api/reviews/my-reviews', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setReviews(response.data.reviews);

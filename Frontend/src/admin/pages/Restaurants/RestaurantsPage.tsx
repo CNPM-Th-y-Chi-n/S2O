@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Edit, XCircle, Loader2 } from "lucide-react";
+import { Search, Filter, Edit, XCircle, Loader2 } from "lucide-react"; // Đã xóa icon Plus
 
 import { restaurantApi } from "@/services/api";
 import {
@@ -30,7 +30,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -50,16 +49,8 @@ export function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  // Chỉ còn state cho Edit
   const [isEditOpen, setIsEditOpen] = useState(false);
-
-  const [newRestaurant, setNewRestaurant] = useState({
-    name: "",
-    address: "",
-    phone: "",
-    opening_hours: "",
-  });
-
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
 
   /* ================= FETCH ================= */
@@ -72,7 +63,7 @@ export function RestaurantsPage() {
         const mock = restaurantAdminMock[r.id];
         return {
           ...r,
-          owner: mock?.owner ?? "Chưa xác định",
+          owner: mock?.owner ?? "Admin System",
           plan: mock?.plan ?? "Free",
           orders: mock?.orders ?? 0,
           revenue: mock?.revenue ?? "0 đ",
@@ -93,21 +84,8 @@ export function RestaurantsPage() {
   }, []);
 
   /* ================= CRUD ================= */
-  const handleCreateRestaurant = async () => {
-    try {
-      await restaurantApi.create(newRestaurant);
-      setIsAddOpen(false);
-      setNewRestaurant({
-        name: "",
-        address: "",
-        phone: "",
-        opening_hours: "",
-      });
-      fetchRestaurants();
-    } catch {
-      alert("Thêm nhà hàng thất bại");
-    }
-  };
+  
+  // Đã xóa hàm handleCreateRestaurant
 
   const handleUpdateRestaurant = async () => {
     try {
@@ -123,8 +101,12 @@ export function RestaurantsPage() {
 
   const handleDeleteRestaurant = async (id: number) => {
     if (!confirm("Bạn chắc chắn muốn xoá nhà hàng này?")) return;
-    await restaurantApi.delete(id);
-    fetchRestaurants();
+    try {
+        await restaurantApi.delete(id);
+        fetchRestaurants();
+    } catch (error) {
+        alert("Xóa thất bại (Có thể do ràng buộc khóa ngoại)");
+    }
   };
 
   /* ================= UI ================= */
@@ -144,9 +126,7 @@ export function RestaurantsPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" /> Thêm nhà hàng
-        </Button>
+        {/* Đã xóa nút "Thêm nhà hàng" ở đây */}
       </div>
 
       <Card>
@@ -174,7 +154,7 @@ export function RestaurantsPage() {
               <TableBody>
                 {restaurants.map((r) => (
                   <TableRow key={r._key}>
-                    <TableCell>{r.name}</TableCell>
+                    <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell>{r.owner}</TableCell>
                     <TableCell>
                       <StatusBadge status={r.plan} />
@@ -211,73 +191,7 @@ export function RestaurantsPage() {
         </CardContent>
       </Card>
 
-      {/* ADD DIALOG */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="bg-white text-gray-900 z-50">
-          <DialogHeader>
-            <DialogTitle>Thêm nhà hàng</DialogTitle>
-            <DialogDescription>
-              Nhập thông tin nhà hàng mới
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label>Tên nhà hàng</Label>
-              <Input
-                className="bg-white text-black"
-                value={newRestaurant.name}
-                onChange={(e) =>
-                  setNewRestaurant({ ...newRestaurant, name: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Địa chỉ</Label>
-              <Input
-                className="bg-white text-black"
-                value={newRestaurant.address}
-                onChange={(e) =>
-                  setNewRestaurant({ ...newRestaurant, address: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Số điện thoại</Label>
-              <Input
-                className="bg-white text-black"
-                value={newRestaurant.phone}
-                onChange={(e) =>
-                  setNewRestaurant({ ...newRestaurant, phone: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Giờ mở cửa</Label>
-              <Input
-                className="bg-white text-black"
-                value={newRestaurant.opening_hours}
-                onChange={(e) =>
-                  setNewRestaurant({
-                    ...newRestaurant,
-                    opening_hours: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-              Huỷ
-            </Button>
-            <Button onClick={handleCreateRestaurant}>Lưu</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Đã xóa Dialog Thêm mới */}
 
       {/* EDIT DIALOG */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

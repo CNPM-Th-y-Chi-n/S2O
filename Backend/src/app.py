@@ -13,6 +13,9 @@ from src.api.controllers.ai_controller import ai_bp
 from src.api.controllers.review_controller import review_bp
 from src.api.controllers.table_controller import table_bp
 from src.api.controllers.menu_controller import menu_bp
+from src.api.controllers.restaurant_manager_controller import restaurant_manager_bp
+from src.api.controllers.restaurant_extra_controller import restaurant_extra_bp
+from src.api.controllers.admin_controller import admin_bp
 
 def create_app():
     app = Flask(__name__)
@@ -28,16 +31,18 @@ def create_app():
     # 👇 SỬA LẠI DÒNG NÀY (XÓA CHỮ 's' CUỐI CÙNG)
     # Cũ: url_prefix="/api/restaurants" -> Sai so với Frontend
     # Mới: url_prefix="/api/restaurant" -> ĐÚNG
-    app.register_blueprint(restaurant_bp, url_prefix="/api/restaurant") 
+    app.register_blueprint(restaurant_bp, url_prefix="/api/restaurants") 
 
     app.register_blueprint(order_bp, url_prefix="/api/order") 
     app.register_blueprint(user_bp, url_prefix="/api/users")
     app.register_blueprint(ai_bp, url_prefix="/api/ai")
     app.register_blueprint(review_bp, url_prefix="/api/reviews")
     
-    # Giữ nguyên table và menu như bạn đã cấu hình
     app.register_blueprint(table_bp, url_prefix="/api/table")
     app.register_blueprint(menu_bp, url_prefix="/api/menu")
+    app.register_blueprint(restaurant_extra_bp)
+    app.register_blueprint(restaurant_manager_bp)
+    app.register_blueprint(admin_bp)
 
     # --- 4. SWAGGER ---
     SWAGGER_URL = "/docs"

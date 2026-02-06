@@ -63,7 +63,7 @@ export default function LandingPage() {
         console.log("🔍 Đang kiểm tra bàn:", tableId);
 
         // Gọi API (Đảm bảo IP máy bạn đúng)
-        const res = await axios.get(`http://192.168.1.81:5000/api/table/status?tableId=${tableId}`);
+        const res = await axios.get(`http://192.168.1.96:5000/api/table/status?tableId=${tableId}`);
         
         console.log("📡 Kết quả từ Server:", res.data); // Hãy xem dòng này ở Console (F12)
 

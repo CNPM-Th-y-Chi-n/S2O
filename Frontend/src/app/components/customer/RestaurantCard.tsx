@@ -88,7 +88,7 @@ export default function CustomerPage() {
 
   // 👉 QUAN TRỌNG: IP Tĩnh của bạn
   // Kiểm tra lại đường dẫn API trong Backend xem là /restaurants hay /restaurant (có 's' hay không)
-  const API_URL = "http://192.168.1.81:5000/api/restaurants";
+  const API_URL = "http://192.168.1.96:5000/api/restaurants";
 
   useEffect(() => {
     const fetchRestaurants = async () => {

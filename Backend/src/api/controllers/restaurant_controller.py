@@ -165,3 +165,24 @@ def update_restaurant(id):
     except: return jsonify({"error": "Error"}), 500
     finally:
         if db: db.close()
+
+#7. API XEM BAN THEO NHÀ HÀNG
+@restaurant_bp.route("/<int:id>/tables", methods=["GET"])
+@cross_origin()
+def get_restaurant_tables(id):
+    db = None
+    try:
+        db = DatabaseMSSQL()
+        repo = RestaurantRepository(db.session)
+        service = RestaurantService(repo)
+        
+        # Gọi Service lấy danh sách bàn
+        tables = service.get_tables_by_restaurant(id)
+        
+        # Trả về danh sách (Frontend sẽ map data này ra giao diện)
+        return jsonify(tables), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db: db.close()

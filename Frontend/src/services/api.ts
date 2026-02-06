@@ -3,7 +3,7 @@ import axios from 'axios';
 // 🔥 SỬA QUAN TRỌNG:
 // 1. Thêm 'http://' để không bị lỗi ghép chuỗi (lỗi double IP).
 // 2. Thêm '/api' vào cuối vì Backend Flask của bạn có prefix là '/api/auth'.
-const BASE_URL = 'http://192.168.1.81:5000/api'; 
+const BASE_URL = 'http://192.168.1.96:5000/api'; 
 
 const api = axios.create({
     baseURL: BASE_URL,
